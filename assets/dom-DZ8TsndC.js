@@ -1,0 +1,1 @@
+import{it as e}from"./index-D05lZJDL.js";function t(e,t){return e===void 0?t:e()||t}function n(e,t){return e===void 0?t:t.concat(e())}function r(e,t){let n=e.style;for(let e in t)n[e]=t[e]}function i(t){if(t==null)return;if(typeof t==`string`)try{return document.querySelector(t)||void 0}catch{return}let n=e(t);if(n)return n.$el||n}export{t as i,i as n,n as r,r as t};
