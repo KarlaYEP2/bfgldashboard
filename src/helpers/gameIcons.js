@@ -1,8 +1,7 @@
 import sf6Logo from 'src/assets/Street_Fighter_6_logo.webp'
-
-const bfglLogo = new URL('/BFGL_Logo.png', import.meta.url).href
-const tekken8Logo = new URL('/Tekken_8.png', import.meta.url).href
-const tekkenBallLogo = new URL('/Tekken_Ball.webp', import.meta.url).href
+import bfglLogo from 'src/assets/BFGL_Logo.png'
+import tekken8Logo from 'src/assets/Tekken_8.png'
+import tekkenBallLogo from 'src/assets/Tekken_Ball.webp'
 
 const gameIconMappings = [
   { keys: ['street fighter 6'], logo: sf6Logo },
