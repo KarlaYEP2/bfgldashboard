@@ -1,43 +1,76 @@
 const API_URL = 'https://api.start.gg/gql/alpha'
+const MAX_RETRY_ATTEMPTS = 4
+const RETRY_BASE_MS = 10000
 
-async function gql(query, variables) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function gql(query, variables, attempt = 1) {
   const apiKey = localStorage.getItem('startgg_api_key')
 
   if (!apiKey) {
     throw new Error('Missing API key')
   }
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ query, variables }),
-  })
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ query, variables }),
+    })
 
-  const json = await res.json()
+    if (res.status === 429) {
+      if (attempt >= MAX_RETRY_ATTEMPTS) {
+        throw new Error('Rate limited: too many retries after 429')
+      }
 
-  if (json.errors) {
-    console.error(json.errors)
-    throw new Error('GraphQL error')
+      const retryAfter = res.headers.get('Retry-After')
+      const delay = retryAfter ? Number(retryAfter) * 1000 : RETRY_BASE_MS * attempt
+
+      await sleep(delay)
+      return gql(query, variables, attempt + 1)
+    }
+
+    const json = await res.json()
+
+    if (json.errors) {
+      console.error(json.errors)
+      throw new Error('GraphQL error')
+    }
+
+    return json.data
+  } catch (error) {
+    if (attempt < MAX_RETRY_ATTEMPTS) {
+      await sleep(RETRY_BASE_MS * attempt)
+      return gql(query, variables, attempt + 1)
+    }
+
+    throw error
   }
-
-  return json.data
 }
 
 export async function fetchVenueDashboard(tournamentSlug) {
-  const tournamentData = await gql(
+  const data = await gql(
     `
     query ($slug: String!) {
       tournament(slug: $slug) {
         name
         events {
-          id
           name
-          slug
-          videogame {
-            name
+          videogame { name }
+          sets(page: 1, perPage: 20) {
+            nodes {
+              id
+              state
+              slots {
+                entrant { name }
+              }
+              station { number }
+            }
           }
         }
       }
@@ -46,56 +79,33 @@ export async function fetchVenueDashboard(tournamentSlug) {
     { slug: tournamentSlug },
   )
 
-  const events = tournamentData.tournament.events
+  const tournament = data.tournament
+  const events = tournament.events
 
-  const eventResults = await Promise.all(
-    events.map(async (event) => {
-      const eventData = await gql(
-        `
-        query ($slug: String!) {
-          event(slug: $slug) {
-            name
-            videogame { name }
-            sets(page: 1, perPage: 20) {
-              nodes {
-                id
-                state
-                slots {
-                  entrant { name }
-                }
-                station { number }
-              }
-            }
-          }
+  const matches = events.flatMap((e) => {
+    const sets = e.sets?.nodes ?? []
+
+    return sets
+      .filter((s) => s.state === 2)
+      .map((s) => {
+        const players = s.slots.map((x) => x.entrant?.name).filter(Boolean)
+
+        const cleanedName = (e.name || '').replace(/^\s*(MAIN:|SIDE:)\s*/i, '').trim()
+
+        return {
+          event: e.name,
+          eventClean: cleanedName,
+          game: e.videogame?.name ?? 'Unknown Game',
+          player1: players[0],
+          player2: players[1],
+          station: s.station?.number ?? null,
         }
-      `,
-        { slug: event.slug },
-      )
-
-      const e = eventData.event
-      const sets = e.sets?.nodes ?? []
-
-      const running = sets
-        .filter((s) => s.state === 2)
-        .map((s) => {
-          const players = s.slots.map((x) => x.entrant?.name).filter(Boolean)
-
-          return {
-            event: e.name,
-            game: e.videogame?.name ?? 'Unknown Game',
-            players:
-              players.length === 2 ? `${players[0]} vs ${players[1]}` : players[0] || 'Waiting...',
-            station: s.station?.number ?? null,
-          }
-        })
-
-      return running
-    }),
-  )
+      })
+  })
 
   return {
-    tournament: tournamentData.tournament.name,
-    matches: eventResults.flat(),
+    tournament: tournament.name,
+    matches,
   }
 }
 

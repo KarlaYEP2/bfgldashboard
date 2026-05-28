@@ -22,7 +22,6 @@ async function load() {
 onMounted(() => {
   load()
 
-  // auto-refresh every 10s
   // setInterval(load, 10000);
 })
 </script>
