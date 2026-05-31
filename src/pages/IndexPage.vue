@@ -52,8 +52,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <q-page class="tv-page">
-    <div class="header">
+  <q-page class="tv-page overflow-hidden position-relative background-black color-white">
+    <div class="q-mb-lg">
       <div>
         <div
           class="q-mb-xs text-h1 text-uppercase"
@@ -65,7 +65,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="settings q-mb-lg" v-if="!configLoaded">
+    <div class="q-mb-lg" v-if="!configLoaded" style="max-width: 480px">
       <q-input v-model="tournamentSlug" label="Tournament Slug" filled dark class="q-mb-md" />
 
       <q-input
@@ -84,7 +84,7 @@ onMounted(async () => {
       <div
         v-for="m in sortedMatches"
         :key="m.player1 + m.player2 + m.station"
-        class="match-card row items-center no-wrap justify-between"
+        class="match-card flex row items-center no-wrap justify-between"
       >
         <div class="players col-3 q-pl-xl text-left text-white text-weight-bold text-h6">
           {{ m.player1 }}
@@ -110,12 +110,8 @@ onMounted(async () => {
 
 <style scoped>
 .tv-page {
-  position: relative;
-  overflow: hidden;
-  min-height: 100vh;
   padding: 28px 32px;
-  color: #fff;
-  background: #060606;
+  min-height: 100vh;
 }
 
 .tv-page::before {
@@ -131,20 +127,11 @@ onMounted(async () => {
 
 .tv-page > * {
   position: relative;
-  z-index: 1;
-}
-
-.header {
-  margin-bottom: 32px;
 }
 
 .title {
   font-weight: 900;
   font-family: var(--font-display), cursive;
-}
-
-.settings {
-  max-width: 480px;
 }
 
 .grid {
@@ -154,9 +141,7 @@ onMounted(async () => {
 }
 
 .match-card {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 20px;
   background: rgba(20, 20, 20, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -185,14 +170,6 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.event {
-  margin-top: 8px;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #b8b8b8;
-}
-
 .match-right {
   min-width: 120px;
   flex-shrink: 0;
@@ -200,7 +177,6 @@ onMounted(async () => {
   background: #ffffff;
   border-radius: 0 24px 24px 0;
   text-align: center;
-  color: #22111f;
   box-shadow: 0 18px 28px rgba(0, 0, 0, 0.1);
 }
 
@@ -209,14 +185,6 @@ onMounted(async () => {
   letter-spacing: 0.08em;
   color: #a30053;
   font-family: var(--font-display), cursive;
-}
-
-.setup-subtitle {
-  margin-top: 8px;
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: #8b8b8b;
 }
 
 @media (max-width: 1200px) {
